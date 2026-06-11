@@ -4,7 +4,7 @@ Daemon de monitoring léger qui expose un endpoint `/health` standardisé pour n
 
 Zéro dépendance. Python 3 stdlib uniquement.
 
-Démo
+**Démo :**
 
 ```bash
 python3 healthnorm.py
@@ -55,7 +55,7 @@ Appuyer sur `q` pour démarrer le serveur. Réponse :
 }
 ```
 
-Installation
+**Installation :**
 
 ```bash
 git clone https://github.com/Boulanger-s/healthnorm
@@ -66,20 +66,20 @@ python3 healthnorm.py
 
 Aucune dépendance à installer. Python 3.6+ suffit.
 
-Usage
+**Usage :**
 
 ```bash
 python3 healthnorm.py            # port 9090 par défaut
 python3 healthnorm.py 8080       # port custom
 ```
 
-Puis depuis n'importe où :
+**Puis depuis n'importe où :**
 
 ```bash
 curl http://TON_IP:9090/health
 ```
 
-Métriques disponibles
+**Métriques disponibles :**
 
 | Clé | Description | Source |
 |-----|-------------|--------|
@@ -102,7 +102,7 @@ Métriques disponibles
 | `timestamp` | Horodatage ISO 8601 | `time.gmtime()` |
 | `errors` | Liste d'erreurs | Interne |
 
-Seuils du status calculé
+**Seuils du status calculé :**
 
 | Status | Condition |
 |--------|-----------|
@@ -114,7 +114,7 @@ HTTP 503 automatique si `status != ok`.
 
 Exposition via Nginx (optionnel)
 
-Pour lier à un sous-domaine :
+**Pour lier à un sous-domaine :**
 
 ```nginx
 server {
@@ -131,7 +131,7 @@ server {
 certbot --nginx -d health.tondomaine.com
 ```
 
-Lancer en service systemd (optionnel)
+**Lancer en service systemd :** (optionnel)
 
 ```bash
 sudo cp healthnorm.py /opt/healthnorm/healthnorm.py
@@ -141,7 +141,7 @@ sudo systemctl enable --now healthnorm
 
 > Note : en mode service, le menu TUI est ignoré — les métriques par défaut sont utilisées.
 
-Compatibilité
+**Compatibilité :**
 
 | OS | Support |
 |----|---------|
