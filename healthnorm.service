@@ -1,0 +1,12 @@
+[Unit]
+Description=healthnorm — health endpoint daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/healthnorm/healthnorm.py 9090
+Restart=always
+RestartSec=5
+StandardInput=null
+
+[Install]
+WantedBy=multi-user.target
