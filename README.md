@@ -1,4 +1,4 @@
-**healthnorm**
+**HEALTHNORM**
 
 Daemon de monitoring léger qui expose un endpoint `/health` standardisé pour n'importe quelle machine Linux.
 
