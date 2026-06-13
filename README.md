@@ -1,16 +1,39 @@
-**HEALTHNORM**
+# healthnorm
 
-Daemon de monitoring léger qui expose un endpoint `/health` standardisé pour n'importe quelle machine Linux.
+**A single-file, zero-dependency Python daemon that exposes a standardized `/health` JSON endpoint on any Linux box.**
 
-Zéro dépendance. Python 3 stdlib uniquement.
-
-**Démo :**
+No Prometheus, no node_exporter, no config files. Run one script, get an instant health check with CPU, memory, disk, uptime, detected services, and a computed `ok` / `degraded` / `critical` status — ready to plug into uptime monitors, load balancers, or your own dashboards.
 
 ```bash
+git clone https://github.com/Boulanger-s/healthnorm
+cd healthnorm
 python3 healthnorm.py
 ```
 
-Un menu interactif s'affiche pour choisir les métriques à exposer :
+---
+
+## Why healthnorm?
+
+- **Zero dependencies** — pure Python 3 stdlib, nothing to `pip install`
+- **One file** — drop it on a server and run it
+- **Standardized output** — same `/health` shape on every machine, so you can monitor a fleet consistently
+- **Interactive setup** — a TUI lets you pick exactly which metrics to expose
+- **Built-in status logic** — automatic `ok` / `degraded` / `critical` with HTTP 503 on problems
+- **Works great on Raspberry Pi / homelab boxes** where installing a full monitoring stack is overkill
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/Boulanger-s/healthnorm
+cd healthnorm
+chmod +x healthnorm.py
+python3 healthnorm.py            # default port 9090
+python3 healthnorm.py 8080       # custom port
+```
+
+An interactive menu lets you choose which metrics to expose:
 
 ```
   healthnorm — configure metrics
@@ -37,7 +60,11 @@ Un menu interactif s'affiche pour choisir les métriques à exposer :
    (*) Errors list
 ```
 
-Appuyer sur `q` pour démarrer le serveur. Réponse :
+Press `q` to start the server. From anywhere:
+
+```bash
+curl http://YOUR_IP:9090/health
+```
 
 ```json
 {
@@ -55,71 +82,53 @@ Appuyer sur `q` pour démarrer le serveur. Réponse :
 }
 ```
 
-**Installation :**
+No dependencies to install. Python 3.6+ is all you need.
 
-```bash
-git clone https://github.com/Boulanger-s/healthnorm
-cd healthnorm
-chmod +x healthnorm.py
-python3 healthnorm.py
-```
+---
 
-Aucune dépendance à installer. Python 3.6+ suffit.
+## Available metrics
 
-**Usage :**
-
-```bash
-python3 healthnorm.py            # port 9090 par défaut
-python3 healthnorm.py 8080       # port custom
-```
-
-**Puis depuis n'importe où :**
-
-```bash
-curl http://TON_IP:9090/health
-```
-
-**Métriques disponibles :**
-
-| Clé | Description | Source |
-|-----|-------------|--------|
-| `name` | Hostname de la machine | `socket.gethostname()` |
-| `ip` | IP locale principale | UDP trick `8.8.8.8` |
-| `service` | Services détectés (Redis, Nginx…) | TCP dial + `ss -tlnp` |
-| `uptime` | Uptime système en secondes | `/proc/uptime` |
-| `status` | `ok` / `degraded` / `critical` | Calculé selon seuils |
-| `cpu_percent` | Usage CPU % | `/proc/stat` (delta 200ms) |
+| Key | Description | Source |
+| --- | --- | --- |
+| `name` | Machine hostname | `socket.gethostname()` |
+| `ip` | Primary local IP | UDP trick to `8.8.8.8` |
+| `service` | Detected services (Redis, Nginx…) | TCP dial + `ss -tlnp` |
+| `uptime` | System uptime in seconds | `/proc/uptime` |
+| `status` | `ok` / `degraded` / `critical` | Computed from thresholds |
+| `cpu_percent` | CPU usage % | `/proc/stat` (200ms delta) |
 | `load_avg` | Load average 1/5/15m | `/proc/loadavg` |
-| `mem_percent` | Usage mémoire % | `/proc/meminfo` |
-| `swap_percent` | Usage swap % | `/proc/meminfo` |
-| `disk_percent` | Usage disque % (/) | `os.statvfs` |
-| `disk_iops` | IOPS lecture/écriture | `/proc/diskstats` (delta 200ms) |
-| `net_bytes_sec` | Bande passante RX/TX (bytes/s) | `/proc/net/dev` (delta 200ms) |
-| `tcp_connections` | Connexions TCP établies | `ss -tn state established` |
-| `net_errors` | Erreurs/drops réseau | `/proc/net/dev` |
-| `cpu_temp_c` | Température CPU en °C | `/sys/class/thermal/` |
-| `kernel` | Version du kernel | `/proc/sys/kernel/osrelease` |
-| `timestamp` | Horodatage ISO 8601 | `time.gmtime()` |
-| `errors` | Liste d'erreurs | Interne |
+| `mem_percent` | Memory usage % | `/proc/meminfo` |
+| `swap_percent` | Swap usage % | `/proc/meminfo` |
+| `disk_percent` | Disk usage % (`/`) | `os.statvfs` |
+| `disk_iops` | Read/write IOPS | `/proc/diskstats` (200ms delta) |
+| `net_bytes_sec` | RX/TX bandwidth (bytes/s) | `/proc/net/dev` (200ms delta) |
+| `tcp_connections` | Established TCP connections | `ss -tn state established` |
+| `net_errors` | Network errors/drops | `/proc/net/dev` |
+| `cpu_temp_c` | CPU temperature (°C) | `/sys/class/thermal/` |
+| `kernel` | Kernel version | `/proc/sys/kernel/osrelease` |
+| `timestamp` | ISO 8601 timestamp | `time.gmtime()` |
+| `errors` | List of errors | Internal |
 
-**Seuils du status calculé :**
+### Status thresholds
 
 | Status | Condition |
-|--------|-----------|
+| --- | --- |
 | `ok` | CPU < 70%, RAM < 80%, Disk < 85% |
-| `degraded` | CPU > 70% ou RAM > 80% ou Disk > 85% |
-| `critical` | CPU > 90% ou RAM > 95% ou Disk > 95% |
+| `degraded` | CPU > 70% or RAM > 80% or Disk > 85% |
+| `critical` | CPU > 90% or RAM > 95% or Disk > 95% |
 
-HTTP 503 automatique si `status != ok`.
+The endpoint automatically returns **HTTP 503** when `status != ok`, so you can wire it straight into load balancers and uptime checks.
 
-Exposition via Nginx (optionnel)
+---
 
-**Pour lier à un sous-domaine :**
+## Deploying
+
+### Behind Nginx (optional)
 
 ```nginx
 server {
     listen 80;
-    server_name health.tondomaine.com;
+    server_name health.yourdomain.com;
 
     location /health {
         proxy_pass http://127.0.0.1:9090/health;
@@ -128,10 +137,10 @@ server {
 ```
 
 ```bash
-certbot --nginx -d health.tondomaine.com
+certbot --nginx -d health.yourdomain.com
 ```
 
-**Lancer en service systemd :** (optionnel)
+### As a systemd service (optional)
 
 ```bash
 sudo cp healthnorm.py /opt/healthnorm/healthnorm.py
@@ -139,13 +148,25 @@ sudo cp healthnorm.service /etc/systemd/system/
 sudo systemctl enable --now healthnorm
 ```
 
-> Note : en mode service, le menu TUI est ignoré — les métriques par défaut sont utilisées.
+> Note: in service mode, the TUI is skipped — default metrics are used.
 
-**Compatibilité :**
+---
+
+## Compatibility
 
 | OS | Support |
-|----|---------|
-| Linux (Debian, Ubuntu, RHEL, Arch…) | ✅ Complet |
-| Raspberry Pi OS | ✅ Complet |
-| macOS | ⚠️ Partiel (`/proc` absent, métriques système désactivées) |
-| Windows | ❌ Non supporté |
+| --- | --- |
+| Linux (Debian, Ubuntu, RHEL, Arch…) | ✅ Full |
+| Raspberry Pi OS | ✅ Full |
+| macOS | ⚠️ Partial (`/proc` unavailable, system metrics disabled) |
+| Windows | ❌ Not supported |
+
+---
+
+## Contributing
+
+Issues and PRs welcome — especially around new auto-detected services, additional metrics, and macOS/BSD support.
+
+## License
+
+MIT
